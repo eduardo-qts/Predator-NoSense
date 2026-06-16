@@ -109,6 +109,12 @@ fn resolve_script(app: &AppHandle) -> Result<PathBuf, String> {
         if let Some(dir) = exe.parent() {
             candidates.push(dir.join("facer_rgb.py"));
             candidates.push(dir.join("../../../backend/facer_rgb.py"));
+            // Production install fallback. Tauri's runtime resolves resources to
+            // `/usr/lib/{productName}` (e.g. `/usr/lib/Predator NoSense`), but the
+            // deb/rpm/pacman bundlers install them under the sanitized package name
+            // (`/usr/lib/predator-no-sense`). When that mismatch hides the bundled
+            // resource, look it up directly relative to the executable's `bin` dir.
+            candidates.push(dir.join("../lib/predator-no-sense/resources/facer_rgb.py"));
         }
     }
     if let Ok(cwd) = std::env::current_dir() {
