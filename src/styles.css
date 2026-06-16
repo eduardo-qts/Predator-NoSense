@@ -82,24 +82,77 @@ body::before {
 
 /* ---- keyboard preview ---- */
 .kb-board {
+  --key-h: 26px;
+  --kb-gap: 4px;
+  position: relative;
   user-select: none;
+  border-radius: 18px;
+  padding: 16px;
+  background: linear-gradient(180deg, rgba(30, 16, 16, 0.5), rgba(0, 0, 0, 0.55));
+  border: 1px solid rgba(240, 18, 18, 0.12);
+  overflow: hidden;
+}
+
+/* function row sits on its own strip, slightly separated like real hardware */
+.kb-funcrow {
+  display: flex;
+  gap: var(--kb-gap);
+  align-items: stretch;
+  margin-bottom: calc(var(--kb-gap) + 4px);
+}
+/* main alpha block + numpad share one fine column grid so everything aligns */
+.kb-grid {
+  display: grid;
+  grid-template-columns: repeat(78, 1fr);
+  grid-auto-rows: var(--key-h);
+  gap: var(--kb-gap);
+}
+/* invisible filler (gap before the media keys) */
+.kb-spacer {
+  flex-basis: 0;
+}
+/* our brand mark on the NitroSense / Predator key */
+.kb-logo {
+  width: 70%;
+  max-width: 18px;
+  height: auto;
+  object-fit: contain;
+  filter: drop-shadow(0 0 3px rgba(0, 0, 0, 0.6));
 }
 
 /* individual key caps (decorative) */
 .kb-key {
+  position: relative;
   display: flex;
   align-items: center;
   justify-content: center;
-  height: 30px;
-  border-radius: 6px;
-  font-family: "JetBrains Mono", ui-monospace, monospace;
-  font-size: 10px;
-  font-weight: 600;
-  letter-spacing: 0.3px;
-  text-transform: uppercase;
-  color: rgba(255, 255, 255, 0.82);
+  height: var(--key-h);
   min-width: 0;
+  border-radius: 5px;
+  overflow: hidden;
+  font-family: "Rajdhani", "Oswald", system-ui, sans-serif;
+  font-weight: 600;
+  color: rgba(255, 255, 255, 0.86);
   transition: box-shadow 220ms ease;
+}
+.kb-key-main {
+  font-size: 12px;
+  line-height: 1;
+  letter-spacing: 0.3px;
+  white-space: nowrap;
+}
+.kb-key-main--word {
+  font-size: 7.5px;
+  letter-spacing: 0.1px;
+  text-transform: uppercase;
+}
+.kb-key-sub {
+  position: absolute;
+  top: 2px;
+  left: 4px;
+  font-size: 7px;
+  line-height: 1;
+  opacity: 0.55;
 }
 
 /* zone labels — column headers above the keyboard */
@@ -171,24 +224,13 @@ body::before {
     inset 0 0 24px rgba(240, 18, 18, 0.08);
 }
 
-/* moving sheen for animated modes */
-.kb-sheen {
-  position: absolute;
-  top: 0;
-  bottom: 0;
-  width: 30%;
-  pointer-events: none;
-  background: linear-gradient(
-    90deg,
-    transparent,
-    rgba(255, 255, 255, 0.1),
-    transparent
-  );
-  animation: sheen 2.6s linear infinite;
+/* breathing mode — the whole keyboard fades out and back in */
+.kb-breathing {
+  animation: breathe 3.6s ease-in-out infinite;
 }
-@keyframes sheen {
-  0% { transform: translateX(-120%); }
-  100% { transform: translateX(220%); }
+@keyframes breathe {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.18; }
 }
 
 /* card entrance */
@@ -226,9 +268,12 @@ body::before {
 /* respect users who ask for less motion */
 @media (prefers-reduced-motion: reduce) {
   .rgb-strip,
-  .kb-sheen,
+  .kb-breathing,
   .fade-in {
     animation: none !important;
+  }
+  .kb-breathing {
+    opacity: 1;
   }
   .fade-in {
     opacity: 1;

@@ -6,7 +6,12 @@ import {
   Stack,
   Text,
 } from "@mantine/core";
-import { IconArrowLeft, IconArrowRight, IconBulb, IconGauge } from "@tabler/icons-react";
+import {
+  IconArrowNarrowLeft,
+  IconArrowNarrowRight,
+  IconBulb,
+  IconGauge,
+} from "@tabler/icons-react";
 import { MODES } from "../types";
 import { useStore } from "../store";
 
@@ -62,7 +67,7 @@ export function EffectControls() {
               Animation speed
             </Text>
             <Text size="sm" c="predator" ml="auto" fw={700}>
-              {speed === 0 ? "Static" : speed}
+              {speed}
             </Text>
           </Group>
           <Slider
@@ -70,14 +75,14 @@ export function EffectControls() {
             onChange={setSpeed}
             aria-label="Animation speed"
             disabled={!meta.usesSpeed}
-            min={0}
-            max={9}
+            min={1}
+            max={10}
             step={1}
             color="predator"
             marks={[
-              { value: 0, label: "0" },
+              { value: 1, label: "1" },
               { value: 5, label: "5" },
-              { value: 9, label: "9" },
+              { value: 10, label: "10" },
             ]}
           />
         </Stack>
@@ -97,16 +102,18 @@ export function EffectControls() {
               {
                 value: "1",
                 label: (
-                  <Group gap={6} justify="center">
-                    <IconArrowLeft size={16} /> Right → Left
+                  <Group gap={6} justify="center" wrap="nowrap">
+                    <IconArrowNarrowLeft size={18} />
+                    <span>Left</span>
                   </Group>
                 ),
               },
               {
                 value: "2",
                 label: (
-                  <Group gap={6} justify="center">
-                    Left → Right <IconArrowRight size={16} />
+                  <Group gap={6} justify="center" wrap="nowrap">
+                    <span>Right</span>
+                    <IconArrowNarrowRight size={18} />
                   </Group>
                 ),
               },

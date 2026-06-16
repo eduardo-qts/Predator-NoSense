@@ -24,9 +24,9 @@ export interface KbState {
   color: RGB; // used by color-based dynamic modes
   zoneColors: RGB[]; // 4 entries, used by Static mode
   selectedZones: number[]; // 1..4, which zones the picker edits in Static
-  speed: number; // 0..9
+  speed: number; // 1..10 (UI/preview; sent to firmware as speed-1)
   brightness: number; // 0..100
-  direction: number; // 1|2
+  direction: number; // 1|2 (preview labels; sent to firmware swapped)
 
   // runtime
   capabilities: Capabilities | null;
@@ -56,13 +56,17 @@ export interface KbState {
   scheduleAutoApply: () => void;
 }
 
-/** Build the dynamic-effect payload from current state. */
+/** Build the dynamic-effect payload from current state.
+ *
+ * The UI keeps speed 1-based (1..10, so a "0 speed" never confuses the user)
+ * but the firmware expects it 0-based, so we send speed-1. Direction is sent
+ * swapped because the firmware travels the opposite way from our labels. */
 export function toEffectConfig(s: KbState): EffectConfig {
   return {
     mode: s.mode,
-    speed: s.speed,
+    speed: s.speed - 1,
     brightness: s.brightness,
-    direction: s.direction,
+    direction: s.direction === 1 ? 2 : 1,
     red: s.color.r,
     green: s.color.g,
     blue: s.color.b,
@@ -76,7 +80,7 @@ export const useStore = create<KbState>((set, get) => ({
   color: { ...WHITE },
   zoneColors: DEFAULT_ZONE_COLORS.map((c) => ({ ...c })),
   selectedZones: [1, 2, 3, 4],
-  speed: 4,
+  speed: 5,
   brightness: 100,
   direction: 1,
 
@@ -166,9 +170,10 @@ export const useStore = create<KbState>((set, get) => ({
     const p: ProfileConfig = await api.loadProfile(name);
     set({
       mode: p.mode,
-      speed: p.speed,
+      // invert the firmware-facing transforms applied in toEffectConfig
+      speed: p.speed + 1,
       brightness: p.brightness,
-      direction: p.direction,
+      direction: p.direction === 1 ? 2 : 1,
       color: { r: p.red, g: p.green, b: p.blue },
     });
   },
