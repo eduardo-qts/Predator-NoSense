@@ -6,7 +6,7 @@ pkgdesc="Modern RGB keyboard control for Acer Predator / Helios / Nitro on Linux
 arch=('x86_64')
 url="https://github.com/eduardo-qts/Predator-NoSense"
 license=('GPL3')
-depends=('webkit2gtk' 'gtk3' 'libayatana-appindicator' 'librsvg' 'python')
+depends=('webkit2gtk-4.1' 'gtk3' 'libayatana-appindicator' 'librsvg' 'python')
 makedepends=('rust' 'cargo' 'npm' 'nodejs')
 optdepends=('linux-headers: build the facer kernel module from backend/'
             'polkit: elevated apply when the keyboard device is root-only')

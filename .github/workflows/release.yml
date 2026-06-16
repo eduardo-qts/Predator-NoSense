@@ -77,7 +77,7 @@ jobs:
         run: |
           pacman -Syu --noconfirm
           pacman -S --needed --noconfirm \
-            git rust npm nodejs webkit2gtk gtk3 libayatana-appindicator \
+            git rust npm nodejs webkit2gtk-4.1 gtk3 libayatana-appindicator \
             librsvg python sudo
 
       - uses: actions/checkout@v4
