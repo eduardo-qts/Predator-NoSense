@@ -1,0 +1,11 @@
+# Optional udev rule: make the Acer RGB keyboard char devices writable by the
+# "input" group so the GUI never needs root / pkexec.
+#
+# Install with:
+#   sudo cp 99-acer-gkbbl.rules /etc/udev/rules.d/
+#   sudo udevadm control --reload-rules && sudo udevadm trigger
+#
+# (On the maintainer's hardware the module already exposes these as 0666, so
+#  this rule is only needed where they come up root-only.)
+KERNEL=="acer-gkbbl-0",        MODE="0660", GROUP="input"
+KERNEL=="acer-gkbbl-static-0", MODE="0660", GROUP="input"

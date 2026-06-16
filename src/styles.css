@@ -1,0 +1,241 @@
+:root {
+  color-scheme: dark;
+  --pred-red: #f01212;
+  --pred-red-soft: rgba(240, 18, 18, 0.14);
+  --pred-edge: rgba(240, 18, 18, 0.25);
+}
+
+html,
+body,
+#root {
+  height: 100%;
+  margin: 0;
+}
+
+body {
+  background:
+    radial-gradient(1100px 520px at 85% -12%, rgba(240, 18, 18, 0.16), transparent 60%),
+    radial-gradient(900px 600px at -8% 8%, rgba(120, 0, 0, 0.18), transparent 55%),
+    radial-gradient(700px 700px at 50% 120%, rgba(40, 0, 0, 0.5), transparent 60%),
+    #08090b;
+  color: #e9ecef;
+  overflow: hidden;
+}
+
+/* faint vertical scanlines for the "gaming hardware" feel */
+body::before {
+  content: "";
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+  background-image: repeating-linear-gradient(
+    0deg,
+    rgba(255, 255, 255, 0.015) 0px,
+    rgba(255, 255, 255, 0.015) 1px,
+    transparent 1px,
+    transparent 3px
+  );
+  z-index: 0;
+}
+
+/* ---- brand wordmark ---- */
+.brand-mark {
+  font-family: "Rajdhani", "Oswald", system-ui, sans-serif;
+  font-weight: 700;
+  letter-spacing: 0.5px;
+  line-height: 0.95;
+  text-transform: uppercase;
+}
+.brand-pred {
+  color: #fff;
+  text-shadow: 0 0 18px rgba(240, 18, 18, 0.45);
+}
+.brand-nosense {
+  background: linear-gradient(90deg, #ff2d2d, #f01212);
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+}
+
+/* the RGB signature strip from the logo footer */
+.rgb-strip {
+  height: 3px;
+  border-radius: 3px;
+  background: linear-gradient(
+    90deg,
+    #ff0040,
+    #ff7a00,
+    #ffe600,
+    #2bff88,
+    #00b3ff,
+    #7c4dff,
+    #ff0040
+  );
+  background-size: 200% 100%;
+  animation: rgb-flow 6s linear infinite;
+}
+@keyframes rgb-flow {
+  to {
+    background-position: 200% 0;
+  }
+}
+
+/* ---- keyboard preview ---- */
+.kb-board {
+  user-select: none;
+}
+
+/* individual key caps (decorative) */
+.kb-key {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  height: 30px;
+  border-radius: 6px;
+  font-family: "JetBrains Mono", ui-monospace, monospace;
+  font-size: 10px;
+  font-weight: 600;
+  letter-spacing: 0.3px;
+  text-transform: uppercase;
+  color: rgba(255, 255, 255, 0.82);
+  min-width: 0;
+  transition: box-shadow 220ms ease;
+}
+
+/* zone labels — column headers above the keyboard */
+.kb-zone-headers {
+  display: flex;
+  gap: 8px;
+  padding: 0 16px;
+  margin-bottom: 10px;
+}
+.kb-zone-header {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 7px;
+  padding: 7px 8px;
+  border-radius: 9px;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.6px;
+  text-transform: uppercase;
+  color: rgba(255, 255, 255, 0.55);
+  background: rgba(255, 255, 255, 0.03);
+  border: 1px solid rgba(255, 255, 255, 0.06);
+  transition: color 180ms ease, background-color 180ms ease,
+    border-color 180ms ease, box-shadow 180ms ease;
+}
+.kb-zone-header:hover {
+  color: rgba(255, 255, 255, 0.85);
+  background: rgba(255, 255, 255, 0.06);
+}
+.kb-zone-header:focus-visible {
+  outline: 2px solid var(--pred-red);
+  outline-offset: 2px;
+}
+.kb-zone-header[data-selected="true"] {
+  color: #fff;
+  border-color: var(--pred-red);
+  background: rgba(240, 18, 18, 0.1);
+  box-shadow: 0 0 14px rgba(240, 18, 18, 0.22);
+}
+.kb-zone-swatch {
+  width: 11px;
+  height: 11px;
+  border-radius: 50%;
+  flex: none;
+  box-shadow: 0 0 0 1px rgba(0, 0, 0, 0.45), 0 0 8px rgba(0, 0, 0, 0.3);
+}
+
+/* zone highlight overlay — visual feedback only, sits over the keys */
+.kb-bands {
+  position: absolute;
+  inset: 16px;
+  display: flex;
+  gap: 8px;
+  pointer-events: none;
+}
+.kb-zone-band {
+  flex: 1;
+  border-radius: 10px;
+  border: 1px solid transparent;
+  transition: background-color 180ms ease, border-color 180ms ease,
+    box-shadow 180ms ease;
+}
+.kb-zone-band[data-selected="true"] {
+  border-color: rgba(240, 18, 18, 0.55);
+  background: rgba(240, 18, 18, 0.06);
+  box-shadow: 0 0 18px rgba(240, 18, 18, 0.25),
+    inset 0 0 24px rgba(240, 18, 18, 0.08);
+}
+
+/* moving sheen for animated modes */
+.kb-sheen {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  width: 30%;
+  pointer-events: none;
+  background: linear-gradient(
+    90deg,
+    transparent,
+    rgba(255, 255, 255, 0.1),
+    transparent
+  );
+  animation: sheen 2.6s linear infinite;
+}
+@keyframes sheen {
+  0% { transform: translateX(-120%); }
+  100% { transform: translateX(220%); }
+}
+
+/* card entrance */
+.fade-in {
+  animation: fadein 320ms cubic-bezier(0.2, 0.7, 0.2, 1) both;
+}
+@keyframes fadein {
+  from { opacity: 0; transform: translateY(8px); }
+  to { opacity: 1; transform: none; }
+}
+
+/* clawed corner accent on panels */
+.clip-accent {
+  position: relative;
+}
+.clip-accent::after {
+  content: "";
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 36px;
+  height: 2px;
+  background: var(--pred-red);
+  box-shadow: 0 0 12px var(--pred-red);
+  border-radius: 2px;
+}
+
+::-webkit-scrollbar { width: 10px; height: 10px; }
+::-webkit-scrollbar-thumb {
+  background: rgba(240, 18, 18, 0.25);
+  border-radius: 8px;
+}
+::-webkit-scrollbar-thumb:hover { background: rgba(240, 18, 18, 0.45); }
+
+/* respect users who ask for less motion */
+@media (prefers-reduced-motion: reduce) {
+  .rgb-strip,
+  .kb-sheen,
+  .fade-in {
+    animation: none !important;
+  }
+  .fade-in {
+    opacity: 1;
+    transform: none;
+  }
+  .kb-key,
+  .kb-zone-band {
+    transition: none !important;
+  }
+}

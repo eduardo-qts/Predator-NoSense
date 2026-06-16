@@ -1,0 +1,19 @@
+# --- Frontend / Tauri ---
+node_modules/
+dist/
+src-tauri/target/
+*.log
+.DS_Store
+
+# --- backend/ kernel module build artifacts (sources are tracked) ---
+backend/**/*.o
+backend/**/*.ko
+backend/**/*.mod
+backend/**/*.mod.c
+backend/**/*.d
+backend/**/.*.cmd
+backend/**/modules.order
+backend/**/Module.symvers
+backend/.tmp_versions/
+backend/service.sh
+backend/.keyboard_cache

@@ -1,0 +1,54 @@
+{
+  "$schema": "https://schema.tauri.app/config/1",
+  "build": {
+    "beforeDevCommand": "npm run dev",
+    "beforeBuildCommand": "npm run build",
+    "devPath": "http://localhost:1420",
+    "distDir": "../dist"
+  },
+  "package": {
+    "productName": "Predator NoSense",
+    "version": "1.0.0"
+  },
+  "tauri": {
+    "allowlist": {
+      "all": false,
+      "shell": { "all": false, "open": true },
+      "dialog": { "all": false, "open": true, "save": true }
+    },
+    "bundle": {
+      "active": true,
+      "targets": ["deb", "rpm"],
+      "identifier": "com.eduardoqts.predatornosense",
+      "publisher": "Eduardo Quirino",
+      "category": "Utility",
+      "shortDescription": "RGB keyboard control for Acer Predator",
+      "longDescription": "Predator NoSense — a modern dark-themed desktop app to control the 4-zone RGB backlight of Acer Predator / Helios / Nitro keyboards on Linux, built on top of the acer-predator-turbo-and-rgb-keyboard kernel module by Jafar Akhondali.",
+      "icon": [
+        "icons/32x32.png",
+        "icons/128x128.png",
+        "icons/128x128@2x.png",
+        "icons/icon.png"
+      ],
+      "resources": { "../backend/facer_rgb.py": "resources/" },
+      "deb": {
+        "depends": ["python3"]
+      }
+    },
+    "windows": [
+      {
+        "title": "Predator NoSense",
+        "width": 1080,
+        "height": 720,
+        "minWidth": 880,
+        "minHeight": 600,
+        "resizable": true,
+        "fullscreen": false,
+        "theme": "Dark"
+      }
+    ],
+    "security": {
+      "csp": "default-src 'self'; img-src 'self' data: asset: https://asset.localhost; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com; script-src 'self'"
+    }
+  }
+}

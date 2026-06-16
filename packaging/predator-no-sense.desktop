@@ -1,0 +1,11 @@
+[Desktop Entry]
+Type=Application
+Name=Predator NoSense
+GenericName=Keyboard Backlight Control
+Comment=Control the RGB keyboard backlight of Acer Predator laptops
+Exec=predator-no-sense
+Icon=predator-no-sense
+Terminal=false
+Categories=Utility;Settings;HardwareSettings;
+Keywords=rgb;keyboard;backlight;acer;predator;lighting;nosense;
+StartupWMClass=Predator NoSense
