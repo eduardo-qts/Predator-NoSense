@@ -11,7 +11,7 @@ Predator NoSense provides a user-friendly graphical interface for the **facer** 
 Install Predator NoSense and the required keyboard driver automatically:
 
 ```bash
-curl -sSL https://raw.githubusercontent.com/EduardoQTS/Predator-NoSense/main/setup.sh | bash
+curl -sSL https://raw.githubusercontent.com/eduardo-qts/Predator-NoSense/main/setup.sh | bash
 ```
 
 The installer will:
@@ -34,7 +34,7 @@ After installation, launch the application from your desktop environment's appli
   * Breathing
   * Neon
   * Wave
-  * Transition
+  * Shifting
   * Zoom
 * Per-zone color customization
 * Interactive keyboard preview
@@ -103,7 +103,7 @@ backend/README.md
 Clone the repository:
 
 ```bash
-git clone https://github.com/EduardoQTS/Predator-NoSense.git
+git clone https://github.com/eduardo-qts/Predator-NoSense.git
 
 cd Predator-NoSense
 ```

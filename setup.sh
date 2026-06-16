@@ -1,14 +1,14 @@
 #!/usr/bin/env bash
 # Predator NoSense - Quick Installer Script
-# Usage: curl -sSL https://raw.githubusercontent.com/EduardoQTS/Predator-NoSense/main/setup.sh | bash
+# Usage: curl -sSL https://raw.githubusercontent.com/eduardo-qts/Predator-NoSense/main/setup.sh | bash
 
 set -euo pipefail
 
 # ---------------------------------------------------------------------------
 #  Configuration
 # ---------------------------------------------------------------------------
-REPO_URL="https://github.com/EduardoQTS/Predator-NoSense.git"
-RELEASES_API="https://api.github.com/repos/EduardoQTS/Predator-NoSense/releases/latest"
+REPO_URL="https://github.com/eduardo-qts/Predator-NoSense.git"
+RELEASES_API="https://api.github.com/repos/eduardo-qts/Predator-NoSense/releases/latest"
 TOTAL_STEPS=6
 
 # ---------------------------------------------------------------------------
