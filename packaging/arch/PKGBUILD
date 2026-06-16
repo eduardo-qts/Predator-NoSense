@@ -23,10 +23,10 @@ build() {
   npm ci
   npm run build
 
-  # Native binary. `custom-protocol` makes it serve the embedded assets
-  # instead of expecting a dev server — that is what `tauri build` enables.
+  # Native binary. Tauri v2 embeds the frontend assets automatically for a
+  # plain release build (the v1 `custom-protocol` feature no longer exists).
   cd src-tauri
-  cargo build --release --locked --features custom-protocol
+  cargo build --release --locked
 }
 
 package() {

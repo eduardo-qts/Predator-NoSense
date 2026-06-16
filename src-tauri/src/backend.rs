@@ -11,7 +11,8 @@ use std::path::{Path, PathBuf};
 use std::process::Command;
 
 use serde::{Deserialize, Serialize};
-use tauri::AppHandle;
+use tauri::path::BaseDirectory;
+use tauri::{AppHandle, Manager};
 
 const DYNAMIC_DEVICE: &str = "/dev/acer-gkbbl-0";
 const STATIC_DEVICE: &str = "/dev/acer-gkbbl-static-0";
@@ -91,9 +92,9 @@ fn resolve_script(app: &AppHandle) -> Result<PathBuf, String> {
         }
     }
 
-    if let Some(res) = app
-        .path_resolver()
-        .resolve_resource("resources/facer_rgb.py")
+    if let Ok(res) = app
+        .path()
+        .resolve("resources/facer_rgb.py", BaseDirectory::Resource)
     {
         if res.is_file() {
             return Ok(res);

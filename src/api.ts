@@ -1,5 +1,5 @@
 // Thin typed wrapper around the Tauri command layer (src-tauri/src/backend.rs).
-import { invoke } from "@tauri-apps/api/tauri";
+import { invoke } from "@tauri-apps/api/core";
 import type {
   Capabilities,
   EffectConfig,

@@ -5,6 +5,7 @@ mod backend;
 
 fn main() {
     tauri::Builder::default()
+        .plugin(tauri_plugin_dialog::init())
         .invoke_handler(tauri::generate_handler![
             backend::get_capabilities,
             backend::apply_effect,

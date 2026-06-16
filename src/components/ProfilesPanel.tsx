@@ -19,7 +19,7 @@ import {
   IconTrash,
   IconPlayerPlay,
 } from "@tabler/icons-react";
-import { open, save } from "@tauri-apps/api/dialog";
+import { open, save } from "@tauri-apps/plugin-dialog";
 import { useStore } from "../store";
 import { api } from "../api";
 

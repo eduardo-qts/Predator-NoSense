@@ -24,7 +24,7 @@ permissions:
 
 jobs:
   # ---------------------------------------------------------------------------
-  # .deb + .rpm via the Tauri bundler (Ubuntu 22.04 still ships webkit2gtk-4.0)
+  # .deb + .rpm via the Tauri bundler (Tauri v2 needs webkit2gtk-4.1, on 22.04)
   # ---------------------------------------------------------------------------
   deb-rpm:
     name: Build .deb & .rpm
@@ -36,7 +36,7 @@ jobs:
         run: |
           sudo apt-get update
           sudo apt-get install -y \
-            libwebkit2gtk-4.0-dev build-essential curl wget file \
+            libwebkit2gtk-4.1-dev build-essential curl wget file libxdo-dev \
             libssl-dev libgtk-3-dev libayatana-appindicator3-dev librsvg2-dev
 
       - uses: actions/setup-node@v4
