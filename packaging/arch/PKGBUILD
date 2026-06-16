@@ -23,10 +23,13 @@ build() {
   npm ci
   npm run build
 
-  # Native binary. Tauri v2 embeds the frontend assets automatically for a
-  # plain release build (the v1 `custom-protocol` feature no longer exists).
+  # Native binary. The `custom-protocol` feature is what `tauri build` enables
+  # under the hood; it must be passed for a plain cargo release build, otherwise
+  # Tauri compiles the binary in dev mode and the webview tries to reach the dev
+  # server (http://localhost:1420) instead of the embedded assets — a white
+  # screen with "Could not connect to localhost: Connection refused".
   cd src-tauri
-  cargo build --release --locked
+  cargo build --release --locked --features custom-protocol
 }
 
 package() {

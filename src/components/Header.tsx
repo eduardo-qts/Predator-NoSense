@@ -1,8 +1,11 @@
-import { Badge, Button, Group, Switch, Text, Tooltip } from "@mantine/core";
-import { IconBolt } from "@tabler/icons-react";
+import { ActionIcon, Badge, Button, Group, Switch, Text, Tooltip } from "@mantine/core";
+import { IconBolt, IconMinus, IconSquare, IconX } from "@tabler/icons-react";
 import { notifications } from "@mantine/notifications";
+import { getCurrentWindow } from "@tauri-apps/api/window";
 import { useStore } from "../store";
 import logoIcon from "../assets/logo-icon.png";
+
+const appWindow = getCurrentWindow();
 
 export function Header() {
   const { capabilities, autoApply, setAutoApply, apply, applying } = useStore();
@@ -20,8 +23,15 @@ export function Header() {
   };
 
   return (
-    <Group justify="space-between" px="xl" py="md" wrap="nowrap" h="100%">
-      <Group gap="sm" wrap="nowrap">
+    <Group
+      data-tauri-drag-region
+      justify="space-between"
+      px="xl"
+      py="md"
+      wrap="nowrap"
+      h="100%"
+    >
+      <Group data-tauri-drag-region gap="sm" wrap="nowrap">
         <img
           src={logoIcon}
           alt="Predator NoSense"
@@ -81,6 +91,36 @@ export function Header() {
         >
           Apply
         </Button>
+
+        <Group gap={4} wrap="nowrap" ml="xs">
+          <ActionIcon
+            variant="subtle"
+            color="gray"
+            size="lg"
+            aria-label="Minimize"
+            onClick={() => appWindow.minimize()}
+          >
+            <IconMinus size={18} />
+          </ActionIcon>
+          <ActionIcon
+            variant="subtle"
+            color="gray"
+            size="lg"
+            aria-label="Maximize"
+            onClick={() => appWindow.toggleMaximize()}
+          >
+            <IconSquare size={15} />
+          </ActionIcon>
+          <ActionIcon
+            variant="subtle"
+            color="red"
+            size="lg"
+            aria-label="Close"
+            onClick={() => appWindow.close()}
+          >
+            <IconX size={18} />
+          </ActionIcon>
+        </Group>
       </Group>
     </Group>
   );

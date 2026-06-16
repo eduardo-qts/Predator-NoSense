@@ -8,6 +8,14 @@ repository = "https://github.com/eduardo-qts/Predator-NoSense"
 edition = "2021"
 rust-version = "1.70"
 
+[features]
+# Enabled by `tauri build` and required for ANY release build: it turns on the
+# custom protocol so the webview loads the embedded frontend (tauri://localhost)
+# instead of the dev server (devUrl). Without it, `cargo build --release` ships a
+# binary compiled with `dev=true` that shows "Could not connect to localhost".
+# DO NOT REMOVE.
+custom-protocol = ["tauri/custom-protocol"]
+
 [build-dependencies]
 tauri-build = { version = "2", features = [] }
 

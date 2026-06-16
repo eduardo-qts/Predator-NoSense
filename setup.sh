@@ -9,7 +9,7 @@ set -euo pipefail
 # ---------------------------------------------------------------------------
 REPO_URL="https://github.com/eduardo-qts/Predator-NoSense.git"
 RELEASES_API="https://api.github.com/repos/eduardo-qts/Predator-NoSense/releases/latest"
-TOTAL_STEPS=6
+TOTAL_STEPS=7
 
 # ---------------------------------------------------------------------------
 #  Colors & styling (gracefully degrade when not a TTY or NO_COLOR is set)
@@ -324,6 +324,36 @@ else
 fi
 
 # ---------------------------------------------------------------------------
+#  Grant non-root access to the keyboard char devices
+# ---------------------------------------------------------------------------
+# The keyboard devices come up owned by root, group "input" (mode 0660) via the
+# udev rule shipped with the package. Without group membership the GUI can only
+# apply colors through pkexec — prompting for a password on every change. Adding
+# the user to "input" makes writes work directly, with no password.
+step "Configuring keyboard access"
+
+# Resolve the human user even when the script itself is run through sudo.
+TARGET_USER="${SUDO_USER:-$(id -un)}"
+
+# Reload the udev rule so the devices pick up the "input" group right away
+# (the module may have loaded before the rule was present).
+if command -v udevadm >/dev/null 2>&1; then
+    run_spin "Reloading udev rules" \
+        sudo sh -c 'udevadm control --reload-rules && udevadm trigger'
+fi
+
+if [[ "$TARGET_USER" == "root" ]]; then
+    warn "Could not determine a non-root user to add to the 'input' group."
+    warn "Run manually:  sudo usermod -aG input <your-user>   (then re-login)."
+elif id -nG "$TARGET_USER" 2>/dev/null | tr ' ' '\n' | grep -qx input; then
+    ok "User ${BOLD}$TARGET_USER${RESET} is already in the 'input' group."
+else
+    run_spin "Adding $TARGET_USER to the 'input' group" \
+        sudo usermod -aG input "$TARGET_USER"
+    NEED_RELOGIN=true
+fi
+
+# ---------------------------------------------------------------------------
 #  Done
 # ---------------------------------------------------------------------------
 step "Finishing up"
@@ -342,4 +372,8 @@ else
 fi
 printf '   %s➜%s Manage the service: %s%s%s.\n' \
     "$CYAN" "$RESET" "$DIM" "${SERVICE_HINT:-systemctl start/stop turbo-fan}" "$RESET"
+if [[ "${NEED_RELOGIN:-false}" == "true" ]]; then
+    printf '   %s➜%s %sLog out and back in once%s so the new "input" group applies — otherwise the app will keep asking for a password on every change.\n' \
+        "$CYAN" "$RESET" "$YELLOW" "$RESET"
+fi
 printf '\n   %sEnjoy the glow. %s⚡%s\n\n' "$MAGENTA" "$YELLOW" "$RESET"
