@@ -1,0 +1,128 @@
+name: Release
+
+# Builds the installable packages the quick-installer (setup.sh) expects and
+# publishes them as assets on a GitHub Release:
+#   • .deb            (Debian / Ubuntu / Mint / Pop!_OS …)   — built on Ubuntu
+#   • .rpm            (Fedora / openSUSE / RHEL …)           — built on Ubuntu
+#   • .pkg.tar.zst    (Arch / Manjaro / EndeavourOS …)       — built on Arch
+#
+# Trigger by pushing a version tag (e.g. `git tag v1.0.0 && git push --tags`)
+# or run it manually against an existing tag from the Actions tab.
+
+on:
+  push:
+    tags:
+      - "v*"
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: "Existing tag to build and release (e.g. v1.0.0)"
+        required: true
+
+permissions:
+  contents: write
+
+jobs:
+  # ---------------------------------------------------------------------------
+  # .deb + .rpm via the Tauri bundler (Ubuntu 22.04 still ships webkit2gtk-4.0)
+  # ---------------------------------------------------------------------------
+  deb-rpm:
+    name: Build .deb & .rpm
+    runs-on: ubuntu-22.04
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install system dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y \
+            libwebkit2gtk-4.0-dev build-essential curl wget file \
+            libssl-dev libgtk-3-dev libayatana-appindicator3-dev librsvg2-dev
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+
+      - uses: dtolnay/rust-toolchain@stable
+
+      - uses: Swatinem/rust-cache@v2
+        with:
+          workspaces: src-tauri
+
+      - run: npm ci
+      - run: npm run tauri:build
+
+      - name: Collect packages
+        run: |
+          mkdir -p dist-artifacts
+          cp src-tauri/target/release/bundle/deb/*.deb dist-artifacts/
+          cp src-tauri/target/release/bundle/rpm/*.rpm dist-artifacts/
+          ls -lh dist-artifacts/
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: deb-rpm
+          path: dist-artifacts/*
+
+  # ---------------------------------------------------------------------------
+  # .pkg.tar.zst built natively on Arch with makepkg (Tauri can't emit it)
+  # ---------------------------------------------------------------------------
+  arch:
+    name: Build .pkg.tar.zst
+    runs-on: ubuntu-latest
+    container: archlinux:base-devel
+    steps:
+      - name: Install build dependencies
+        run: |
+          pacman -Syu --noconfirm
+          pacman -S --needed --noconfirm \
+            git rust npm nodejs webkit2gtk gtk3 libayatana-appindicator \
+            librsvg python sudo
+
+      - uses: actions/checkout@v4
+
+      - name: Resolve version
+        id: ver
+        run: |
+          REF="${{ github.event.inputs.tag || github.ref_name }}"
+          echo "version=${REF#v}" >> "$GITHUB_OUTPUT"
+
+      - name: Build package with makepkg
+        run: |
+          # makepkg refuses to run as root, so build as an unprivileged user.
+          useradd -m builder
+          install -d /home/builder/build
+          cp packaging/arch/PKGBUILD /home/builder/build/PKGBUILD
+          sed -i "s/^pkgver=.*/pkgver=${{ steps.ver.outputs.version }}/" \
+            /home/builder/build/PKGBUILD
+          chown -R builder:builder /home/builder/build
+          sudo -u builder bash -lc 'cd /home/builder/build && makepkg -f --noconfirm'
+          mkdir -p dist-artifacts
+          cp /home/builder/build/*.pkg.tar.zst dist-artifacts/
+          ls -lh dist-artifacts/
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: arch
+          path: dist-artifacts/*
+
+  # ---------------------------------------------------------------------------
+  # Publish all packages on the release the tag points at
+  # ---------------------------------------------------------------------------
+  release:
+    name: Publish GitHub Release
+    needs: [deb-rpm, arch]
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/download-artifact@v4
+        with:
+          path: artifacts
+
+      - name: Publish release
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: ${{ github.event.inputs.tag || github.ref_name }}
+          files: artifacts/**/*
+          fail_on_unmatched_files: true
+          generate_release_notes: true

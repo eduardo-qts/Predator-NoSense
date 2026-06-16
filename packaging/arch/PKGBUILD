@@ -1,0 +1,60 @@
+# Maintainer: Eduardo Quirino <eduardo.quirino@idals.com.br>
+pkgname=predator-no-sense
+pkgver=1.0.0
+pkgrel=1
+pkgdesc="Modern RGB keyboard control for Acer Predator / Helios / Nitro on Linux"
+arch=('x86_64')
+url="https://github.com/eduardo-qts/Predator-NoSense"
+license=('GPL3')
+depends=('webkit2gtk' 'gtk3' 'libayatana-appindicator' 'librsvg' 'python')
+makedepends=('rust' 'cargo' 'npm' 'nodejs')
+optdepends=('linux-headers: build the facer kernel module from backend/'
+            'polkit: elevated apply when the keyboard device is root-only')
+options=('!debug')
+source=("$pkgname-$pkgver.tar.gz::https://github.com/eduardo-qts/Predator-NoSense/archive/refs/tags/v$pkgver.tar.gz")
+sha256sums=('SKIP')
+
+_srcdir="Predator-NoSense-$pkgver"
+
+build() {
+  cd "$srcdir/$_srcdir"
+
+  # Frontend bundle (embedded into the binary via tauri-build).
+  npm ci
+  npm run build
+
+  # Native binary. `custom-protocol` makes it serve the embedded assets
+  # instead of expecting a dev server — that is what `tauri build` enables.
+  cd src-tauri
+  cargo build --release --locked --features custom-protocol
+}
+
+package() {
+  cd "$srcdir/$_srcdir"
+
+  # Binary built by cargo is named after the crate (predator-nosense); install
+  # it under the hyphenated name the .desktop Exec and the .deb/.rpm both use.
+  install -Dm755 "src-tauri/target/release/predator-nosense" \
+    "$pkgdir/usr/bin/predator-no-sense"
+
+  install -Dm644 "packaging/predator-no-sense.desktop" \
+    "$pkgdir/usr/share/applications/predator-no-sense.desktop"
+
+  install -Dm644 "src-tauri/icons/32x32.png" \
+    "$pkgdir/usr/share/icons/hicolor/32x32/apps/predator-no-sense.png"
+  install -Dm644 "src-tauri/icons/128x128.png" \
+    "$pkgdir/usr/share/icons/hicolor/128x128/apps/predator-no-sense.png"
+  install -Dm644 "src-tauri/icons/128x128@2x.png" \
+    "$pkgdir/usr/share/icons/hicolor/256x256/apps/predator-no-sense.png"
+
+  # Bundled backend client — same resource layout as the .deb/.rpm so the app's
+  # resource resolver finds it at /usr/lib/predator-no-sense/resources/.
+  install -Dm644 "backend/facer_rgb.py" \
+    "$pkgdir/usr/lib/predator-no-sense/resources/facer_rgb.py"
+
+  # udev rule for non-root access to the keyboard char devices.
+  install -Dm644 "packaging/99-acer-gkbbl.rules" \
+    "$pkgdir/usr/lib/udev/rules.d/99-acer-gkbbl.rules"
+
+  install -Dm644 "LICENSE" "$pkgdir/usr/share/licenses/$pkgname/LICENSE"
+}
