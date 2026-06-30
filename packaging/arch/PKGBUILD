@@ -1,6 +1,6 @@
-# Maintainer: Eduardo Quirino <eduardo.quirino@idals.com.br>
+# Maintainer: Eduardo Quirino <eduardoqts.eng@gmail.com>
 pkgname=predator-no-sense
-pkgver=1.0.0
+pkgver=1.2.0
 pkgrel=1
 pkgdesc="Modern RGB keyboard control for Acer Predator / Helios / Nitro on Linux"
 arch=('x86_64')

@@ -1,8 +1,8 @@
 [package]
 name = "predator-nosense"
-version = "1.0.0"
+version = "1.2.0"
 description = "Predator NoSense — modern RGB keyboard control for Acer Predator on Linux"
-authors = ["Eduardo Quirino <eduardo.quirino@idals.com.br>"]
+authors = ["Eduardo Quirino <eduardoqts.eng@gmail.com>"]
 license = "GPL-3.0"
 repository = "https://github.com/eduardo-qts/Predator-NoSense"
 edition = "2021"
