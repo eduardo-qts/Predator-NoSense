@@ -17,6 +17,13 @@ fn main() {
             backend::delete_profile,
             backend::import_profile,
             backend::export_profile,
+            backend::get_autostart,
+            backend::write_boot_effect,
+            backend::write_boot_zones,
+            backend::enable_autostart,
+            backend::disable_autostart,
+            backend::check_update,
+            backend::run_update,
         ])
         .run(tauri::generate_context!())
         .expect("error while running Predator NoSense");

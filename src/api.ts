@@ -4,6 +4,7 @@ import type {
   Capabilities,
   EffectConfig,
   ProfileConfig,
+  UpdateInfo,
   ZoneColor,
 } from "./types";
 
@@ -35,4 +36,20 @@ export const api = {
 
   exportProfile: (name: string, dest: string) =>
     invoke<void>("export_profile", { name, dest }),
+
+  getAutostart: () => invoke<boolean>("get_autostart"),
+
+  writeBootEffect: (config: EffectConfig) =>
+    invoke<void>("write_boot_effect", { config }),
+
+  writeBootZones: (zones: ZoneColor[], brightness: number) =>
+    invoke<void>("write_boot_zones", { zones, brightness }),
+
+  enableAutostart: () => invoke<void>("enable_autostart"),
+
+  disableAutostart: () => invoke<void>("disable_autostart"),
+
+  checkUpdate: () => invoke<UpdateInfo>("check_update"),
+
+  runUpdate: () => invoke<void>("run_update"),
 };

@@ -3,12 +3,16 @@ import {
   Alert,
   AppShell,
   Box,
+  Button,
   Grid,
+  Group,
   ScrollArea,
   Stack,
 } from "@mantine/core";
-import { IconAlertTriangle } from "@tabler/icons-react";
+import { IconAlertTriangle, IconDownload } from "@tabler/icons-react";
+import { notifications } from "@mantine/notifications";
 import { useStore } from "./store";
+import { api } from "./api";
 import { Header } from "./components/Header";
 import { KeyboardPreview } from "./components/KeyboardPreview";
 import { ModeSelector } from "./components/ModeSelector";
@@ -17,7 +21,7 @@ import { EffectControls } from "./components/EffectControls";
 import { ProfilesPanel } from "./components/ProfilesPanel";
 
 export default function App() {
-  const { init, capabilities } = useStore();
+  const { init, capabilities, update, dismissUpdate } = useStore();
 
   useEffect(() => {
     init();
@@ -25,6 +29,19 @@ export default function App() {
 
   const noDevice =
     capabilities && !(capabilities.dynamic_device && capabilities.static_device);
+
+  const onUpdate = async () => {
+    try {
+      await api.runUpdate();
+      notifications.show({
+        color: "predator",
+        message: "Installer launched in a terminal — follow the prompts.",
+      });
+      dismissUpdate();
+    } catch (e) {
+      notifications.show({ color: "red", title: "Update failed", message: String(e) });
+    }
+  };
 
   return (
     <AppShell header={{ height: 76 }} padding={0}>
@@ -46,6 +63,35 @@ export default function App() {
             style={{ position: "relative", zIndex: 1, minHeight: "100%" }}
           >
             <div aria-live="polite" role="status">
+              {update && (
+                <Alert
+                  mb="lg"
+                  color="predator"
+                  variant="light"
+                  icon={<IconDownload size={18} />}
+                  title={`Update available — ${update.latest}`}
+                  withCloseButton
+                  onClose={dismissUpdate}
+                >
+                  <Stack gap="sm">
+                    <span>
+                      You're on {update.current}. A newer version is available.
+                    </span>
+                    <Group gap="sm">
+                      <Button
+                        size="xs"
+                        leftSection={<IconDownload size={14} />}
+                        onClick={onUpdate}
+                      >
+                        Update now
+                      </Button>
+                      <Button size="xs" variant="default" onClick={dismissUpdate}>
+                        Later
+                      </Button>
+                    </Group>
+                  </Stack>
+                </Alert>
+              )}
               {noDevice && (
                 <Alert
                   mb="lg"

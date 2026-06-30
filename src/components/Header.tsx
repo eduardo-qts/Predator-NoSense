@@ -1,14 +1,21 @@
+import { useEffect, useState } from "react";
 import { ActionIcon, Badge, Button, Group, Switch, Text, Tooltip } from "@mantine/core";
 import { IconBolt, IconMinus, IconSquare, IconX } from "@tabler/icons-react";
 import { notifications } from "@mantine/notifications";
 import { getCurrentWindow } from "@tauri-apps/api/window";
+import { getVersion } from "@tauri-apps/api/app";
 import { useStore } from "../store";
 import logoIcon from "../assets/logo-icon.png";
 
 const appWindow = getCurrentWindow();
 
 export function Header() {
-  const { capabilities, autoApply, setAutoApply, apply, applying } = useStore();
+  const [version, setVersion] = useState("");
+  useEffect(() => {
+    getVersion().then(setVersion).catch(() => {});
+  }, []);
+  const { capabilities, autoApply, setAutoApply, autostart, setAutostart, apply, applying } =
+    useStore();
 
   const ready =
     capabilities?.dynamic_device && capabilities?.static_device && capabilities?.python_ok;
@@ -19,6 +26,20 @@ export function Header() {
       notifications.show({ color: "predator", message: "Applied to keyboard" });
     } catch (e) {
       notifications.show({ color: "red", title: "Apply failed", message: String(e) });
+    }
+  };
+
+  const onToggleBoot = async (v: boolean) => {
+    try {
+      await setAutostart(v);
+      notifications.show({
+        color: "predator",
+        message: v
+          ? "Will restore your choice on every boot"
+          : "Boot restore disabled",
+      });
+    } catch (e) {
+      notifications.show({ color: "red", title: "Boot setup failed", message: String(e) });
     }
   };
 
@@ -44,10 +65,17 @@ export function Header() {
           }}
         />
         <div>
-          <Text className="brand-mark" size="lg" lh={1} translate="no">
-            <span className="brand-pred">PREDATOR</span>{" "}
-            <span className="brand-nosense">NOSENSE</span>
-          </Text>
+          <Group gap="xs" align="center" wrap="nowrap">
+            <Text className="brand-mark" size="lg" lh={1} translate="no">
+              <span className="brand-pred">PREDATOR</span>{" "}
+              <span className="brand-nosense">NOSENSE</span>
+            </Text>
+            {version && (
+              <Badge size="xs" variant="outline" color="gray" translate="no">
+                v{version}
+              </Badge>
+            )}
+          </Group>
           <Text size="xs" c="dimmed" tt="uppercase" style={{ letterSpacing: 1.5 }}>
             Acer Keyboard RGB Control
           </Text>
@@ -80,6 +108,20 @@ export function Header() {
           size="sm"
           color="predator"
         />
+
+        <Tooltip
+          multiline
+          w={260}
+          label="Re-apply the current color/mode automatically on every reboot (asks for admin once to install a systemd service)."
+        >
+          <Switch
+            checked={autostart}
+            onChange={(e) => onToggleBoot(e.currentTarget.checked)}
+            label="On boot"
+            size="sm"
+            color="predator"
+          />
+        </Tooltip>
 
         <Button
           leftSection={<IconBolt size={18} />}

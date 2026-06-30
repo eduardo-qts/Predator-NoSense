@@ -1,4 +1,5 @@
 import { create } from "zustand";
+import { persist } from "zustand/middleware";
 import { api } from "./api";
 import {
   Capabilities,
@@ -6,8 +7,10 @@ import {
   Mode,
   ProfileConfig,
   RGB,
+  UpdateInfo,
   ZONE_COUNT,
 } from "./types";
+import { isNewer } from "./version";
 
 const WHITE: RGB = { r: 255, g: 255, b: 255 };
 
@@ -33,6 +36,8 @@ export interface KbState {
   profiles: string[];
   applying: boolean;
   autoApply: boolean;
+  autostart: boolean; // restore current choice on every reboot
+  update: UpdateInfo | null; // set only when a newer release exists
   lastError: string | null;
 
   // actions
@@ -45,8 +50,12 @@ export interface KbState {
   setBrightness: (b: number) => void;
   setDirection: (d: number) => void;
   setAutoApply: (v: boolean) => void;
+  setAutostart: (v: boolean) => Promise<void>;
+
+  dismissUpdate: () => void;
 
   apply: () => Promise<void>;
+  writeBootScript: () => Promise<void>;
   refreshProfiles: () => Promise<void>;
   saveProfile: (name: string) => Promise<void>;
   loadProfile: (name: string) => Promise<void>;
@@ -75,7 +84,9 @@ export function toEffectConfig(s: KbState): EffectConfig {
 
 let applyTimer: ReturnType<typeof setTimeout> | null = null;
 
-export const useStore = create<KbState>((set, get) => ({
+export const useStore = create<KbState>()(
+  persist(
+    (set, get) => ({
   mode: Mode.Static,
   color: { ...WHITE },
   zoneColors: DEFAULT_ZONE_COLORS.map((c) => ({ ...c })),
@@ -88,6 +99,8 @@ export const useStore = create<KbState>((set, get) => ({
   profiles: [],
   applying: false,
   autoApply: true,
+  autostart: false,
+  update: null,
   lastError: null,
 
   init: async () => {
@@ -97,6 +110,18 @@ export const useStore = create<KbState>((set, get) => ({
     } catch (e) {
       set({ lastError: String(e) });
     }
+    try {
+      set({ autostart: await api.getAutostart() });
+    } catch {
+      /* non-fatal */
+    }
+    // Best-effort update check; silent when offline or up to date.
+    api
+      .checkUpdate()
+      .then((u) => {
+        if (isNewer(u.latest, u.current)) set({ update: u });
+      })
+      .catch(() => {});
     await get().refreshProfiles();
   },
 
@@ -128,6 +153,33 @@ export const useStore = create<KbState>((set, get) => ({
     get().scheduleAutoApply();
   },
   setAutoApply: (autoApply) => set({ autoApply }),
+  dismissUpdate: () => set({ update: null }),
+
+  setAutostart: async (v) => {
+    if (v) {
+      await get().writeBootScript(); // seed the script before installing the unit
+      await api.enableAutostart();
+    } else {
+      await api.disableAutostart();
+    }
+    set({ autostart: v });
+  },
+
+  // Mirror the current selection into ~/.config/predator/autostart.sh (no root).
+  writeBootScript: async () => {
+    const s = get();
+    if (s.mode === Mode.Static) {
+      const zones = s.zoneColors.map((c, i) => ({
+        zone: i + 1,
+        red: c.r,
+        green: c.g,
+        blue: c.b,
+      }));
+      await api.writeBootZones(zones, s.brightness);
+    } else {
+      await api.writeBootEffect(toEffectConfig(s));
+    }
+  },
 
   apply: async () => {
     const s = get();
@@ -143,6 +195,12 @@ export const useStore = create<KbState>((set, get) => ({
         await api.applyStaticZones(zones, s.brightness);
       } else {
         await api.applyEffect(toEffectConfig(s));
+      }
+      // Keep the boot-restore script in sync with the last applied choice.
+      if (get().autostart) {
+        get()
+          .writeBootScript()
+          .catch(() => {});
       }
     } catch (e) {
       set({ lastError: String(e) });
@@ -193,6 +251,22 @@ export const useStore = create<KbState>((set, get) => ({
         .catch(() => {});
     }, 180);
   },
-}));
+    }),
+    {
+      name: "predator-ui",
+      // Only persist the user's choices, not runtime/device state.
+      partialize: (s) => ({
+        mode: s.mode,
+        color: s.color,
+        zoneColors: s.zoneColors,
+        selectedZones: s.selectedZones,
+        speed: s.speed,
+        brightness: s.brightness,
+        direction: s.direction,
+        autoApply: s.autoApply,
+      }),
+    }
+  )
+);
 
 export const ZONE_INDICES = Array.from({ length: ZONE_COUNT }, (_, i) => i + 1);

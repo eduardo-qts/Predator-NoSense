@@ -120,3 +120,10 @@ export interface Capabilities {
 }
 
 export const ZONE_COUNT = 4;
+
+export interface UpdateInfo {
+  current: string;
+  latest: string;
+  url: string;
+  notes: string;
+}
