@@ -77,7 +77,9 @@ ok "Updated tauri.conf.json"
 
 # Cargo.toml — version = "X.Y.Z"  (only the first occurrence, the package one)
 sed -i "0,/^version = \"$CURRENT\"/s//version = \"$NEXT\"/" "$CARGO_TOML"
-ok "Updated Cargo.toml"
+# Cargo.lock records the package version too, and the PKGBUILD builds with --locked.
+cargo update -w --offline --manifest-path "$CARGO_TOML" >/dev/null
+ok "Updated Cargo.toml + Cargo.lock"
 
 # package.json + package-lock.json — npm keeps both in sync, which `npm ci` requires.
 npm --prefix "$ROOT" version "$NEXT" --no-git-tag-version --allow-same-version >/dev/null
@@ -89,7 +91,8 @@ echo ""
 info "Verification:"
 echo "  tauri.conf.json : $(grep -oP '"version"\s*:\s*"\K[^"]+' "$TAURI_CONF" | head -1)"
 echo "  Cargo.toml      : $(grep -m1 '^version' "$CARGO_TOML" | grep -oP '"[^"]+"')"
-echo "  package.json     : $(grep -oP '"version"\s*:\s*"\K[^"]+' "$PACKAGE_JSON" | head -1)"
+echo "  package.json    : $(grep -oP '"version"\s*:\s*"\K[^"]+' "$PACKAGE_JSON" | head -1)"
+echo "  Cargo.lock      : $(grep -A1 '^name = "predator-nosense"' "$ROOT/src-tauri/Cargo.lock" | grep -oP 'version = "\K[^"]+')"
 echo ""
 
 # ── git commit + tag ─────────────────────────────────────────────────────
@@ -99,10 +102,7 @@ TAG="v$NEXT"
 info "Staging changed files…"
 git -C "$ROOT" add "$TAURI_CONF" "$CARGO_TOML" "$PACKAGE_JSON" "$ROOT/package-lock.json"
 
-# Also update Cargo.lock if it exists (the version field changes there too).
-if [[ -f "$ROOT/src-tauri/Cargo.lock" ]]; then
-  git -C "$ROOT" add "$ROOT/src-tauri/Cargo.lock" 2>/dev/null || true
-fi
+git -C "$ROOT" add "$ROOT/src-tauri/Cargo.lock"
 
 git -C "$ROOT" commit -m "chore: bump version to $TAG"
 ok "Committed"
