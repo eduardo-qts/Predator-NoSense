@@ -141,7 +141,11 @@ export const useStore = create<KbState>()(
           set({ lastError: String(e) });
         }
         try {
-          set({ autostart: await api.getAutostart() });
+          const active = await api.getAutostart();
+          set({ autostart: active });
+          if (active) {
+            get().writeBootScript().catch(() => {});
+          }
         } catch {
           /* non-fatal */
         }
@@ -370,6 +374,7 @@ export const useStore = create<KbState>()(
         direction: s.direction,
         autoApply: s.autoApply,
         debounceMs: s.debounceMs,
+        autostart: s.autostart,
       }),
     }
   )
