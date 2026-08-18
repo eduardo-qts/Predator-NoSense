@@ -22,9 +22,9 @@ Linux. It is a GUI client for the **`facer` kernel module** and the bundled
 2. **Toolchains**
    - Rust (stable): `curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh`
    - Node.js 18+ and npm
-   - System libs (Tauri v1):
-     - **Arch**: `sudo pacman -S --needed webkit2gtk base-devel curl wget openssl appmenu-gtk-module libappindicator-gtk3 librsvg`
-     - **Debian/Ubuntu**: `sudo apt install libwebkit2gtk-4.0-dev build-essential curl wget libssl-dev libgtk-3-dev libayatana-appindicator3-dev librsvg2-dev`
+   - System libs (Tauri v2 — needs webkit2gtk **4.1**, not 4.0):
+     - **Arch**: `sudo pacman -S --needed webkit2gtk-4.1 base-devel curl wget openssl appmenu-gtk-module libappindicator-gtk3 librsvg`
+     - **Debian/Ubuntu**: `sudo apt install libwebkit2gtk-4.1-dev build-essential curl wget libssl-dev libgtk-3-dev libayatana-appindicator3-dev librsvg2-dev`
    - `python3` at runtime (used by the bundled `facer_rgb.py`).
 
 ## Develop
@@ -32,6 +32,13 @@ Linux. It is a GUI client for the **`facer` kernel module** and the bundled
 ```bash
 npm install
 npm run tauri:dev        # hot-reload dev window
+```
+
+## Test
+
+```bash
+npm test                 # colour, effect, config and zone logic (Vitest)
+cd src-tauri && cargo test   # profile-metadata reader
 ```
 
 ## Build distributable packages

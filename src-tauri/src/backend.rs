@@ -72,6 +72,21 @@ fn default_zone() -> u8 {
     1
 }
 
+/// A saved profile plus what the UI needs to draw its card, without applying it.
+#[derive(Debug, Clone, Serialize)]
+pub struct ProfileMeta {
+    pub name: String,
+    /// Seconds since the Unix epoch; the UI does the formatting.
+    pub modified: u64,
+    pub mode: u8,
+    pub speed: u8,
+    pub brightness: u8,
+    pub direction: u8,
+    pub red: u8,
+    pub green: u8,
+    pub blue: u8,
+}
+
 /// Runtime capability report, so the UI can degrade gracefully.
 #[derive(Debug, Clone, Serialize)]
 pub struct Capabilities {
@@ -355,12 +370,80 @@ pub fn list_profiles(app: AppHandle) -> Result<Vec<String>, String> {
     Ok(names)
 }
 
+/// A profile name must resolve to exactly one file inside the profiles
+/// directory. `import_profile` derives its name from a path the user picked, so
+/// this is a trust boundary, not a formality.
+fn safe_profile_name(name: &str) -> Result<&str, String> {
+    let trimmed = name.trim();
+    if trimmed.is_empty() {
+        return Err("Profile name cannot be empty.".into());
+    }
+    if trimmed == "." || trimmed == ".." || trimmed.contains(['/', '\\']) {
+        return Err(format!("Invalid profile name '{name}'."));
+    }
+    Ok(trimmed)
+}
+
+/// Read every parseable profile in `dir`. Unlike `list_profiles`, this never
+/// shells out, so the Profiles page still works with the driver unloaded. A
+/// single damaged file is skipped rather than failing the whole listing.
+fn read_profiles_meta(dir: &Path) -> Vec<ProfileMeta> {
+    let entries = match std::fs::read_dir(dir) {
+        Ok(e) => e,
+        Err(_) => return Vec::new(),
+    };
+    let mut out = Vec::new();
+    for entry in entries.flatten() {
+        let path = entry.path();
+        if path.extension().and_then(|e| e.to_str()) != Some("json") {
+            continue;
+        }
+        // to_str, not to_string_lossy: a lossy name would carry U+FFFD and
+        // read_profile/delete_profile could never resolve it back to a file.
+        let Some(name) = path.file_stem().and_then(|s| s.to_str()).map(String::from) else {
+            continue;
+        };
+        let Ok(data) = std::fs::read_to_string(&path) else {
+            continue;
+        };
+        let Ok(cfg) = serde_json::from_str::<ProfileConfig>(&data) else {
+            continue;
+        };
+        let modified = entry
+            .metadata()
+            .and_then(|m| m.modified())
+            .ok()
+            .and_then(|t| t.duration_since(std::time::UNIX_EPOCH).ok())
+            .map(|d| d.as_secs())
+            .unwrap_or(0);
+        out.push(ProfileMeta {
+            name,
+            modified,
+            mode: cfg.mode,
+            speed: cfg.speed,
+            brightness: cfg.brightness,
+            direction: cfg.direction,
+            red: cfg.red,
+            green: cfg.green,
+            blue: cfg.blue,
+        });
+    }
+    // read_dir order is arbitrary; without this the cards reshuffle on every
+    // save or delete.
+    out.sort_by(|a, b| b.modified.cmp(&a.modified).then_with(|| a.name.cmp(&b.name)));
+    out
+}
+
+/// Saved profiles with their settings, for the Profiles page cards.
+#[tauri::command]
+pub fn list_profiles_meta() -> Vec<ProfileMeta> {
+    read_profiles_meta(&profiles_dir())
+}
+
 /// Apply an effect AND save it under `name` (single `facer_rgb.py` call with -save).
 #[tauri::command]
 pub fn save_profile(app: AppHandle, name: String, config: EffectConfig) -> Result<(), String> {
-    if name.trim().is_empty() {
-        return Err("Profile name cannot be empty.".into());
-    }
+    let name = safe_profile_name(&name)?.to_string();
     let script = resolve_script(&app)?;
     let mut args = effect_args(&config);
     args.push("-save".into());
@@ -379,6 +462,7 @@ pub fn load_profile(app: AppHandle, name: String) -> Result<ProfileConfig, Strin
 /// Read a profile's JSON (for previewing in the UI) without applying it.
 #[tauri::command]
 pub fn read_profile(_app: AppHandle, name: String) -> Result<ProfileConfig, String> {
+    let name = safe_profile_name(&name)?;
     let path = profiles_dir().join(format!("{name}.json"));
     let data = std::fs::read_to_string(&path)
         .map_err(|e| format!("Cannot read profile '{name}': {e}"))?;
@@ -388,6 +472,7 @@ pub fn read_profile(_app: AppHandle, name: String) -> Result<ProfileConfig, Stri
 /// Delete a saved profile file.
 #[tauri::command]
 pub fn delete_profile(_app: AppHandle, name: String) -> Result<(), String> {
+    let name = safe_profile_name(&name)?;
     let path = profiles_dir().join(format!("{name}.json"));
     std::fs::remove_file(&path).map_err(|e| format!("Cannot delete '{name}': {e}"))
 }
@@ -401,6 +486,7 @@ pub fn import_profile(_app: AppHandle, source: String) -> Result<String, String>
         .ok_or("Invalid file name")?
         .to_string_lossy()
         .to_string();
+    let stem = safe_profile_name(&stem)?.to_string();
     // Validate it parses as a profile before importing.
     let data = std::fs::read_to_string(&src).map_err(|e| format!("Cannot read file: {e}"))?;
     let _: ProfileConfig =
@@ -415,6 +501,7 @@ pub fn import_profile(_app: AppHandle, source: String) -> Result<String, String>
 /// Export a saved profile to an arbitrary destination path.
 #[tauri::command]
 pub fn export_profile(_app: AppHandle, name: String, dest: String) -> Result<(), String> {
+    let name = safe_profile_name(&name)?;
     let src = profiles_dir().join(format!("{name}.json"));
     std::fs::copy(&src, &dest).map_err(|e| format!("Export failed: {e}"))?;
     Ok(())
@@ -598,5 +685,116 @@ pub fn disable_autostart(_app: AppHandle) -> Result<(), String> {
             "Failed to remove boot service: {}",
             String::from_utf8_lossy(&out.stderr)
         ))
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use std::time::{SystemTime, UNIX_EPOCH};
+
+    /// A scratch directory of our own, removed when the test finishes.
+    struct Scratch(PathBuf);
+    impl Scratch {
+        fn new(tag: &str) -> Self {
+            let nanos = SystemTime::now()
+                .duration_since(UNIX_EPOCH)
+                .unwrap()
+                .as_nanos();
+            let dir = std::env::temp_dir().join(format!("pns-{tag}-{nanos}"));
+            std::fs::create_dir_all(&dir).unwrap();
+            Scratch(dir)
+        }
+        fn write(&self, name: &str, body: &str) {
+            std::fs::write(self.0.join(name), body).unwrap();
+        }
+    }
+    impl Drop for Scratch {
+        fn drop(&mut self) {
+            let _ = std::fs::remove_dir_all(&self.0);
+        }
+    }
+
+    const CRIMSON: &str = r#"{"mode":0,"zone":1,"speed":3,"brightness":100,
+        "direction":1,"red":240,"green":18,"blue":18}"#;
+    const AURORA: &str = r#"{"mode":3,"zone":1,"speed":5,"brightness":80,
+        "direction":2,"red":0,"green":176,"blue":255}"#;
+
+    #[test]
+    fn lists_every_saved_profile_with_the_settings_stored_in_it() {
+        let dir = Scratch::new("list");
+        dir.write("Crimson.json", CRIMSON);
+        dir.write("Aurora.json", AURORA);
+
+        let mut found = read_profiles_meta(&dir.0);
+        found.sort_by(|a, b| a.name.cmp(&b.name));
+
+        let names: Vec<&str> = found.iter().map(|p| p.name.as_str()).collect();
+        assert_eq!(names, ["Aurora", "Crimson"]);
+
+        let aurora = &found[0];
+        assert_eq!(aurora.mode, 3);
+        assert_eq!(aurora.brightness, 80);
+        assert_eq!((aurora.red, aurora.green, aurora.blue), (0, 176, 255));
+
+        let crimson = &found[1];
+        assert_eq!(crimson.mode, 0);
+        assert_eq!(crimson.brightness, 100);
+    }
+
+    #[test]
+    fn a_damaged_file_does_not_hide_the_profiles_around_it() {
+        let dir = Scratch::new("damaged");
+        dir.write("Crimson.json", CRIMSON);
+        dir.write("Broken.json", "{ this is not json");
+        dir.write("notes.txt", "not a profile at all");
+        // Valid JSON, wrong extension: listing it would produce a profile whose
+        // Load and Delete both look for a "<name>.json" that isn't there.
+        dir.write("Sneaky.txt", CRIMSON);
+
+        let found = read_profiles_meta(&dir.0);
+
+        let names: Vec<&str> = found.iter().map(|p| p.name.as_str()).collect();
+        assert_eq!(names, ["Crimson"]);
+    }
+
+    #[test]
+    fn reports_when_each_profile_was_last_written() {
+        let before = SystemTime::now()
+            .duration_since(UNIX_EPOCH)
+            .unwrap()
+            .as_secs();
+        let dir = Scratch::new("mtime");
+        dir.write("Crimson.json", CRIMSON);
+
+        let found = read_profiles_meta(&dir.0);
+
+        assert_eq!(found.len(), 1);
+        assert!(
+            found[0].modified >= before,
+            "modified {} should be at or after {before}",
+            found[0].modified
+        );
+    }
+
+    #[test]
+    fn a_profile_name_cannot_reach_outside_the_profiles_directory() {
+        for bad in ["../escape", "a/b", "..", "", "with\\slash"] {
+            assert!(
+                safe_profile_name(bad).is_err(),
+                "{bad:?} should be rejected"
+            );
+        }
+        for ok in ["Crimson", "deep focus", "neon-2", "perfil_ção"] {
+            assert!(safe_profile_name(ok).is_ok(), "{ok:?} should be allowed");
+        }
+    }
+
+    #[test]
+    fn a_missing_profiles_directory_is_simply_empty() {
+        let dir = Scratch::new("missing");
+        let gone = dir.0.join("never-created");
+
+        assert!(read_profiles_meta(&gone).is_empty());
     }
 }

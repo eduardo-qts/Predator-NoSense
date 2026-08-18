@@ -119,7 +119,22 @@ export interface Capabilities {
   profiles_dir: string;
 }
 
+export interface ProfileMeta {
+  name: string;
+  /** Seconds since the Unix epoch. */
+  modified: number;
+  mode: number;
+  speed: number;
+  brightness: number;
+  direction: number;
+  red: number;
+  green: number;
+  blue: number;
+}
+
 export const ZONE_COUNT = 4;
+
+export type Page = "keyboard" | "profiles" | "settings" | "about";
 
 export interface UpdateInfo {
   current: string;
