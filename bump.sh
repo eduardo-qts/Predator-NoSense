@@ -79,10 +79,9 @@ ok "Updated tauri.conf.json"
 sed -i "0,/^version = \"$CURRENT\"/s//version = \"$NEXT\"/" "$CARGO_TOML"
 ok "Updated Cargo.toml"
 
-# package.json — "version": "X.Y.Z"
-# package.json may lag behind, so replace whatever version is there.
-sed -i "s/\"version\": \"[0-9]*\.[0-9]*\.[0-9]*\"/\"version\": \"$NEXT\"/" "$PACKAGE_JSON"
-ok "Updated package.json"
+# package.json + package-lock.json — npm keeps both in sync, which `npm ci` requires.
+npm --prefix "$ROOT" version "$NEXT" --no-git-tag-version --allow-same-version >/dev/null
+ok "Updated package.json + package-lock.json"
 
 # ── verify ───────────────────────────────────────────────────────────────
 
@@ -98,7 +97,7 @@ echo ""
 TAG="v$NEXT"
 
 info "Staging changed files…"
-git -C "$ROOT" add "$TAURI_CONF" "$CARGO_TOML" "$PACKAGE_JSON"
+git -C "$ROOT" add "$TAURI_CONF" "$CARGO_TOML" "$PACKAGE_JSON" "$ROOT/package-lock.json"
 
 # Also update Cargo.lock if it exists (the version field changes there too).
 if [[ -f "$ROOT/src-tauri/Cargo.lock" ]]; then
