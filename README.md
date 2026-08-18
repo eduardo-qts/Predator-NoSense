@@ -143,11 +143,11 @@ Including:
 
 ## Technology Stack
 
-* Tauri v1
+* Tauri v2
 * React
 * TypeScript
-* Mantine v7
 * Zustand
+* Vitest
 * Rust
 
 ---

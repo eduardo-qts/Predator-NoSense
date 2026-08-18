@@ -11,6 +11,7 @@ fn main() {
             backend::apply_effect,
             backend::apply_static_zones,
             backend::list_profiles,
+            backend::list_profiles_meta,
             backend::save_profile,
             backend::load_profile,
             backend::read_profile,

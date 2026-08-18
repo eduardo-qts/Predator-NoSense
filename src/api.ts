@@ -4,6 +4,7 @@ import type {
   Capabilities,
   EffectConfig,
   ProfileConfig,
+  ProfileMeta,
   UpdateInfo,
   ZoneColor,
 } from "./types";
@@ -17,7 +18,7 @@ export const api = {
   applyStaticZones: (zones: ZoneColor[], brightness: number) =>
     invoke<void>("apply_static_zones", { zones, brightness }),
 
-  listProfiles: () => invoke<string[]>("list_profiles"),
+  listProfilesMeta: () => invoke<ProfileMeta[]>("list_profiles_meta"),
 
   saveProfile: (name: string, config: EffectConfig) =>
     invoke<void>("save_profile", { name, config }),

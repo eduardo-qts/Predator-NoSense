@@ -58,7 +58,7 @@ see §4). They are documented here only so future contributors know they exist.
 ```
 ┌────────────────────┐   Tauri IPC    ┌─────────────────────┐   process spawn   ┌──────────────┐   write()    ┌────────────────────┐
 │  React UI (webview)│ ─────────────▶ │ Rust commands       │ ────────────────▶ │ facer_rgb.py │ ───────────▶ │ /dev/acer-gkbbl-*  │
-│  Mantine + Zustand │ ◀───────────── │ (backend.rs)        │ ◀──────────────── │  (existing)  │   (kernel)   │  char devices       │
+│  React + Zustand   │ ◀───────────── │ (backend.rs)        │ ◀──────────────── │  (existing)  │   (kernel)   │  char devices       │
 └────────────────────┘   results      └─────────────────────┘   stdout/stderr   └──────────────┘              └────────────────────┘
 ```
 
@@ -87,13 +87,28 @@ universally present on Linux desktops (3.14 here). The script is bundled as a Ta
 resource so the app stays installable as one package. The Rust boundary is thin enough that
 switching to option (B) later is localized to `backend.rs`.
 
-### D2 — Stack: Tauri v1 + React + TS + Mantine + Zustand
+### D2 — Stack: Tauri v2 + React + TS + Zustand, no component library
 
-- **Tauri v1** (not v2): only `webkit2gtk-4.0` is present; Tauri v2 needs `webkit2gtk-4.1`.
-  v1 avoids requiring a `sudo` system-package install. (Upgrade path documented in BUILD.md.)
-- **Mantine** for the component library + native dark theme; **Zustand** for state.
+- **Tauri v2**, frameless (`decorations: false`) — the app draws its own title bar.
+- **No component library.** The UI was rebuilt from a bespoke design in which every surface
+  is custom: the four-zone keyboard render, the HSV colour picker, the sliders and the
+  toggles. Mantine was dropped in that rewrite because none of it survived — its widgets
+  were being overridden into invisibility, so it cost four dependencies and a theme override
+  to contribute nothing. Plain CSS in `src/styles.css` plus small primitives in
+  `src/components/primitives.tsx` replace it.
+- **Zustand** for state, persisted to `localStorage` (user choices only, never device state).
+- **Pure logic lives in `src/lib/`** — colour conversion, effect maths, keyboard layout, zone
+  selection — so it can be tested without a DOM. `npm test` runs those under Vitest;
+  `cargo test` covers the profile-metadata reader.
 - **Recharts dropped**: it was requested for monitoring graphs; the RGB-only scope has no
   time-series to chart, so adding it would be dead weight.
+
+### D2.1 — Reading profiles without the driver
+
+`list_profiles` shells out to `facer_rgb.py -list`, so it fails when the kernel module is
+absent. `list_profiles_meta` instead reads `~/.config/predator/saved profiles` directly and
+returns each profile's settings and mtime, which keeps the Profiles page usable when the
+keyboard is not available. A malformed file is skipped rather than failing the listing.
 
 ### D3 — Privilege model
 

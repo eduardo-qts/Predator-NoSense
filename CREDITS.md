@@ -35,7 +35,7 @@ the upstream kernel module are that acknowledgement. 🙏
 ## This GUI
 
 - **Predator NoSense** GUI — Eduardo Quirino ([@eduardo-qts](https://github.com/eduardo-qts))
-- Built with Tauri, React, TypeScript, Mantine and Zustand.
+- Built with Tauri, React, TypeScript and Zustand.
 
 ## License
 

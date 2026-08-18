@@ -1,134 +1,87 @@
-import { useEffect } from "react";
-import {
-  Alert,
-  AppShell,
-  Box,
-  Button,
-  Grid,
-  Group,
-  ScrollArea,
-  Stack,
-} from "@mantine/core";
-import { IconAlertTriangle, IconDownload } from "@tabler/icons-react";
-import { notifications } from "@mantine/notifications";
+import { useEffect, useState } from "react";
+import { getVersion } from "@tauri-apps/api/app";
 import { useStore } from "./store";
 import { api } from "./api";
-import { Header } from "./components/Header";
-import { KeyboardPreview } from "./components/KeyboardPreview";
-import { ModeSelector } from "./components/ModeSelector";
-import { ColorControls } from "./components/ColorControls";
-import { EffectControls } from "./components/EffectControls";
-import { ProfilesPanel } from "./components/ProfilesPanel";
+import { TitleBar } from "./components/TitleBar";
+import { Sidebar } from "./components/Sidebar";
+import { KeyboardPage } from "./components/KeyboardPage";
+import { ProfilesPage } from "./components/ProfilesPage";
+import { SettingsPage } from "./components/SettingsPage";
+import { AboutPage } from "./components/AboutPage";
+import { Dot } from "./components/primitives";
+import { IconClose, IconExport } from "./components/Icons";
 
 export default function App() {
-  const { init, capabilities, update, dismissUpdate } = useStore();
+  const { init, page, toast, clearToast, update, dismissUpdate, say } = useStore();
+  const [version, setVersion] = useState("");
 
   useEffect(() => {
     init();
+    getVersion()
+      .then((v) => setVersion(`v${v}`))
+      .catch(() => {});
   }, [init]);
-
-  const noDevice =
-    capabilities && !(capabilities.dynamic_device && capabilities.static_device);
 
   const onUpdate = async () => {
     try {
       await api.runUpdate();
-      notifications.show({
-        color: "predator",
-        message: "Installer launched in a terminal — follow the prompts.",
-      });
+      say("Installer launched in a terminal — follow the prompts.");
       dismissUpdate();
     } catch (e) {
-      notifications.show({ color: "red", title: "Update failed", message: String(e) });
+      say(String(e), "bad");
     }
   };
 
   return (
-    <AppShell header={{ height: 76 }} padding={0}>
-      <AppShell.Header
-        style={{
-          background: "rgba(10,9,11,0.78)",
-          backdropFilter: "blur(14px)",
-          borderBottom: "1px solid rgba(240,18,18,0.18)",
-        }}
-      >
-        <Header />
-        <div className="rgb-strip" />
-      </AppShell.Header>
+    <div className="shell">
+      <TitleBar version={version} />
 
-      <AppShell.Main>
-        <ScrollArea h="calc(100vh - 76px)" type="auto">
-          <Box
-            p="xl"
-            style={{ position: "relative", zIndex: 1, minHeight: "100%" }}
-          >
-            <div aria-live="polite" role="status">
-              {update && (
-                <Alert
-                  mb="lg"
-                  color="predator"
-                  variant="light"
-                  icon={<IconDownload size={18} />}
-                  title={`Update available — ${update.latest}`}
-                  withCloseButton
-                  onClose={dismissUpdate}
-                >
-                  <Stack gap="sm">
-                    <span>
-                      You're on {update.current}. A newer version is available.
-                    </span>
-                    <Group gap="sm">
-                      <Button
-                        size="xs"
-                        leftSection={<IconDownload size={14} />}
-                        onClick={onUpdate}
-                      >
-                        Update now
-                      </Button>
-                      <Button size="xs" variant="default" onClick={dismissUpdate}>
-                        Later
-                      </Button>
-                    </Group>
-                  </Stack>
-                </Alert>
-              )}
-              {noDevice && (
-                <Alert
-                  mb="lg"
-                  color="red"
-                  variant="light"
-                  icon={<IconAlertTriangle size={18} />}
-                  title="Keyboard device not found"
-                >
-                  The character devices <code>/dev/acer-gkbbl-0</code> /{" "}
-                  <code>/dev/acer-gkbbl-static-0</code> are missing. Load the{" "}
-                  <code>facer</code> kernel module (see the project README) and
-                  reopen the app.
-                </Alert>
-              )}
+      <div className="body">
+        <Sidebar version={version} />
+
+        <div className="page">
+          {update && (
+            <div className="banner banner--info" style={{ margin: "16px 28px 0" }}>
+              <span style={{ color: "var(--red)", flex: "none", display: "flex" }}>
+                <IconExport size={16} />
+              </span>
+              <div
+                style={{ flex: 1, minWidth: 0, display: "flex", flexDirection: "column", gap: 2 }}
+              >
+                <span style={{ fontSize: 12.5, fontWeight: 600 }}>
+                  Update available — {update.latest}
+                </span>
+                <span style={{ fontSize: 11.5, color: "var(--fg-4)" }}>
+                  You're on {update.current}. A newer version is available.
+                </span>
+              </div>
+              <button type="button" className="btn btn--sm btn--primary" onClick={onUpdate}>
+                Update now
+              </button>
+              <button
+                type="button"
+                className="win-btn"
+                aria-label="Dismiss update notice"
+                onClick={dismissUpdate}
+              >
+                <IconClose size={11} />
+              </button>
             </div>
+          )}
 
-            <Stack gap="lg" style={{ position: "relative", zIndex: 1 }}>
-              <KeyboardPreview />
+          {page === "keyboard" && <KeyboardPage />}
+          {page === "profiles" && <ProfilesPage />}
+          {page === "settings" && <SettingsPage />}
+          {page === "about" && <AboutPage version={version} />}
+        </div>
+      </div>
 
-              <Grid gutter="lg">
-                <Grid.Col span={{ base: 12, md: 7 }}>
-                  <Stack gap="lg">
-                    <ModeSelector />
-                    <ColorControls />
-                  </Stack>
-                </Grid.Col>
-                <Grid.Col span={{ base: 12, md: 5 }}>
-                  <Stack gap="lg">
-                    <EffectControls />
-                    <ProfilesPanel />
-                  </Stack>
-                </Grid.Col>
-              </Grid>
-            </Stack>
-          </Box>
-        </ScrollArea>
-      </AppShell.Main>
-    </AppShell>
+      {toast && (
+        <div className="toast" role="status" onClick={clearToast}>
+          <Dot color={toast.kind === "bad" ? "var(--red)" : "var(--green)"} />
+          <span>{toast.msg}</span>
+        </div>
+      )}
+    </div>
   );
 }
