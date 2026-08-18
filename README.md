@@ -1,5 +1,10 @@
 # Predator NoSense
 
+[![CI](https://github.com/eduardo-qts/Predator-NoSense/actions/workflows/ci.yml/badge.svg)](https://github.com/eduardo-qts/Predator-NoSense/actions/workflows/ci.yml)
+[![Release](https://img.shields.io/github/v/release/eduardo-qts/Predator-NoSense?label=release)](https://github.com/eduardo-qts/Predator-NoSense/releases/latest)
+[![License: GPL v3](https://img.shields.io/badge/license-GPLv3-blue.svg)](LICENSE)
+[![Platform: Linux](https://img.shields.io/badge/platform-Linux-informational)](#requirements)
+
 A modern Linux desktop application for controlling the **4-zone RGB keyboard backlight** found in supported Acer Predator, Helios, and Nitro laptops.
 
 Predator NoSense provides a user-friendly graphical interface for the **facer** kernel module from the *acer-predator-turbo-and-rgb-keyboard-linux-module* project by Jafar Akhondali. See [CREDITS.md](CREDITS.md) for attribution details.
