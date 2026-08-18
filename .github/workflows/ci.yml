@@ -1,0 +1,26 @@
+name: CI
+
+# Type-checks, tests and bundles the frontend on every push and pull request,
+# so a break shows up before a release tag is cut. The Rust/Tauri build needs
+# the whole webkit2gtk toolchain and stays in release.yml.
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+jobs:
+  test:
+    name: Type-check & test
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+
+      - run: npm ci
+      - run: npm test
+      - run: npm run build
